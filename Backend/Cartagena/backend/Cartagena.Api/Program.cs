@@ -6,6 +6,8 @@ using Cartagena.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
+using Yarp.ReverseProxy.Configuration;
+using Yarp.ReverseProxy.Model;
 
 var builder = WebApplication.CreateBuilder(args);
 var secret = builder.Configuration["JWT_SECRET"] ?? throw new InvalidOperationException("Falta JWT_SECRET");
@@ -51,16 +53,42 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("Comprador", p => p.RequireAssertion(c => c.User.Claims.Any(x => x.Type == "rol" &&
         (x.Value.Equals("CLIENTE", StringComparison.OrdinalIgnoreCase) || x.Value.Equals("ADMIN", StringComparison.OrdinalIgnoreCase)))));
 });
-// CORS: usa CORS_ORIGIN (separado por comas) o, si no existe, los orígenes del proyecto.
-var origins = (builder.Configuration["CORS_ORIGIN"] ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-if (origins.Length == 0)
-    origins = new[]
+// CORS: usa CORS_ORIGIN (separado por comas) y siempre agrega los origenes del
+// proyecto, porque el sitio se sirve tanto en .web.app como en .firebaseapp.com.
+var configurados = (builder.Configuration["CORS_ORIGIN"] ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+var origenes = new HashSet<string>(configurados, StringComparer.OrdinalIgnoreCase)
+{
+    "https://libreria-carta-agena.web.app",
+    "https://libreria-carta-agena.firebaseapp.com",
+    "http://localhost:5173"
+};
+builder.Services.AddCors(o => o.AddPolicy("Configured", p => p.WithOrigins(origenes.ToArray()).AllowAnyMethod().AllowAnyHeader()));
+
+// Proxy del microservicio de login (Node), que corre en el mismo contenedor.
+// Así /api/v1/auth/* queda en el mismo origen que la API y el frontend no
+// necesita CORS cruzado para iniciar sesión.
+var destinoLogin = builder.Configuration["LOGIN_PROXY_TARGET"] ?? "http://localhost:3000";
+builder.Services.AddReverseProxy().LoadFromMemory(
+    new[]
     {
-        "https://libreria-carta-agena.web.app",
-        "https://libreria-carta-agena.firebaseapp.com",
-        "http://localhost:5173"
-    };
-builder.Services.AddCors(o => o.AddPolicy("Configured", p => p.WithOrigins(origins).AllowAnyMethod().AllowAnyHeader()));
+        new RouteConfig
+        {
+            RouteId = "login",
+            ClusterId = "login",
+            Match = new RouteMatch { Path = "/api/v1/{**catch-all}" }
+        }
+    },
+    new[]
+    {
+        new ClusterConfig
+        {
+            ClusterId = "login",
+            Destinations = new Dictionary<string, DestinationConfig>
+            {
+                ["login"] = new DestinationConfig { Address = destinoLogin }
+            }
+        }
+    });
 
 var app = builder.Build();
 app.UseCors("Configured");          // primero, para que también aplique a respuestas de error
@@ -69,6 +97,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapOpenApi();
+// Proxy /api/v1/* -> microservicio de login (Node) en el mismo contenedor.
+app.MapReverseProxy();
 // Scalar publica documentación; JWT nunca se desactiva en los controladores protegidos.
 app.MapScalarApiReference();
 
