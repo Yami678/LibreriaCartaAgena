@@ -34,7 +34,8 @@ var additions=new Dictionary<string,Dictionary<string,string>>
     ["venta"]=new() { ["estado"]="VARCHAR(30) NOT NULL DEFAULT 'Pendiente'",
       ["estado_pago"]="VARCHAR(30) NOT NULL DEFAULT 'Pendiente'",["referencia_pago"]="VARCHAR(120) NULL",
       ["clave_idempotencia"]="VARCHAR(100) NULL" },
-    ["envio"]=new() { ["numero_guia"]="VARCHAR(100) NULL",["fecha_entrega"]="DATETIME NULL" },
+    ["envio"]=new() { ["numero_guia"]="VARCHAR(100) NULL",["fecha_entrega"]="DATETIME NULL",
+      ["confirmado_cliente"]="BOOLEAN NOT NULL DEFAULT FALSE" },
     ["pedido_compra"]=new() { ["estado"]="VARCHAR(30) NOT NULL DEFAULT 'Pendiente'",
       ["fecha_recepcion"]="DATETIME NULL" }
 };

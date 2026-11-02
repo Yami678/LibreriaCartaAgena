@@ -25,6 +25,15 @@ export async function buscarUsuarioPorNombre(nombreUsuario) {
   } catch(e) { throw e; }
 }
 
+/** Comprueba si un nombre de usuario ya existe (para el registro y las sugerencias). */
+export async function existeNombreUsuario(nombreUsuario) {
+  const [rows] = await pool.execute(
+    'SELECT 1 FROM usuario WHERE nombre_usuario=? LIMIT 1',
+    [nombreUsuario]
+  );
+  return rows.length > 0;
+}
+
 export async function registrarAcceso(idUsuario) {
   await pool.execute('UPDATE usuario SET ultimo_acceso=NOW(), intentos_fallidos=0, bloqueado_hasta=NULL WHERE id_usuario=?',[idUsuario]);
 }

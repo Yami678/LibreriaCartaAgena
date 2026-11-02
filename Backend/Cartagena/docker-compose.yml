@@ -1,4 +1,18 @@
 name: cartagena-csharp
+
+# ---------------------------------------------------------------------------
+# Modo Docker.
+#
+# La base de datos NO se levanta aqui: se reutiliza la instancia MySQL que ya
+# existe (contenedor `mysql-cartagena`, publicado en 127.0.0.1:3307).
+#
+# Requisitos (los hace `./start-docker.sh` automaticamente):
+#   1. docker network create libreria-network
+#   2. docker network connect --alias mysql libreria-network mysql-cartagena
+#
+# Dentro de la red los servicios hablan con MySQL como `mysql:3306`; el
+# `.env` (DB_HOST/DB_PORT) solo aplica cuando ejecutas los backends nativos.
+# ---------------------------------------------------------------------------
 services:
   gateway:
     image: nginx:1.27-alpine
@@ -12,7 +26,7 @@ services:
       - resenas
       - proveedores
       - historial-compras
-    networks: [default]
+    networks: [default, libreria-network]
     restart: unless-stopped
 
   # Backend principal, reimplementado en ASP.NET Core 10.
@@ -23,12 +37,13 @@ services:
     environment:
       ASPNETCORE_URLS: http://+:8080
       ASPNETCORE_ENVIRONMENT: Development
-      DB_HOST: ${DB_HOST:-mysql}
-      DB_PORT: ${DB_PORT:-3306}
+      DB_HOST: mysql
+      DB_PORT: '3306'
       DB_NAME: ${DB_NAME:-tienda_online}
       JWT_ISSUER: ${JWT_ISSUER:-microservicio-login}
       LIBROS_PDF_DIR: /data/pdfs
     ports:
+      # El frontend en desarrollo apunta aqui (VITE_API_PROXY_TARGET).
       - '127.0.0.1:${DOTNET_PORT:-8083}:8080'
     volumes:
       - libros_pdf:/data/pdfs
@@ -42,10 +57,13 @@ services:
       NODE_ENV: development
       PORT: '3000'
       API_PREFIX: /api/v1
-      DB_HOST: ${DB_HOST:-mysql}
-      DB_PORT: ${DB_PORT:-3306}
+      DB_HOST: mysql
+      DB_PORT: '3306'
       DB_NAME: ${DB_NAME:-tienda_online}
       HTTPS_ENABLED: 'false'
+    ports:
+      # Publicado para que Vite pueda hacer proxy de /api/v1 sin el gateway.
+      - '127.0.0.1:${LOGIN_PORT:-3000}:3000'
     networks: [default, libreria-network]
     restart: unless-stopped
 
@@ -53,8 +71,8 @@ services:
     build: ./servicios/proveedores
     env_file: .env
     environment:
-      DB_HOST: ${DB_HOST:-mysql}
-      DB_PORT: ${DB_PORT:-3306}
+      DB_HOST: mysql
+      DB_PORT: '3306'
       DB_NAME: ${DB_NAME:-tienda_online}
     networks: [default, libreria-network]
     restart: unless-stopped
@@ -63,8 +81,8 @@ services:
     build: ./servicios/comentarios-resenas-service
     env_file: .env
     environment:
-      DB_HOST: ${DB_HOST:-mysql}
-      DB_PORT: ${DB_PORT:-3306}
+      DB_HOST: mysql
+      DB_PORT: '3306'
       DB_NAME: ${DB_NAME:-tienda_online}
     networks: [default, libreria-network]
     restart: unless-stopped
@@ -73,8 +91,8 @@ services:
     build: ./servicios/historial-compras
     env_file: .env
     environment:
-      DB_HOST: ${DB_HOST:-mysql}
-      DB_PORT: ${DB_PORT:-3306}
+      DB_HOST: mysql
+      DB_PORT: '3306'
       DB_NAME: ${DB_NAME:-tienda_online}
       JWT_ISSUER: ${JWT_ISSUER:-microservicio-login}
     networks: [default, libreria-network]
@@ -85,8 +103,8 @@ services:
     build: ./backend/Cartagena.Migrator
     env_file: .env
     environment:
-      DB_HOST: ${DB_HOST:-mysql}
-      DB_PORT: ${DB_PORT:-3306}
+      DB_HOST: mysql
+      DB_PORT: '3306'
       DB_NAME: ${DB_NAME:-tienda_online}
     networks: [default, libreria-network]
     restart: 'no'

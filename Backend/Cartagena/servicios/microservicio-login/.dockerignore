@@ -1,0 +1,16 @@
+node_modules/
+npm-debug.log*
+.env
+.env.*
+!.env.example
+coverage/
+tests/
+prueba-api.html
+certs/
+*.pem
+*.key
+*.crt
+.git/
+.gitignore
+Dockerfile
+.dockerignore

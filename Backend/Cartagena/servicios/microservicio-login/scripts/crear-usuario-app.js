@@ -10,6 +10,9 @@ import { logger } from '../src/utils/logger.js';
 const rootUser = process.env.DB_ROOT_USER ?? 'root';
 const rootPassword = process.env.DB_ROOT_PASSWORD ?? '';
 
+// 'localhost' sirve para ejecucion nativa y '%' para los contenedores Docker.
+const HOSTS = ['localhost', '%'];
+
 async function ejecutar() {
   const conexion = await mysql.createConnection({
     host: variables.DB_HOST,
@@ -25,19 +28,23 @@ async function ejecutar() {
       `CREATE DATABASE IF NOT EXISTS ${base} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
     );
 
-    // Si la cuenta ya existe, ALTER la deja con la clave actual de .env.
-    await conexion.query(`CREATE USER IF NOT EXISTS ?@'localhost' IDENTIFIED BY ?`, [
-      variables.DB_USER,
-      variables.DB_PASSWORD
-    ]);
-    await conexion.query(`ALTER USER ?@'localhost' IDENTIFIED BY ?`, [
-      variables.DB_USER,
-      variables.DB_PASSWORD
-    ]);
-    await conexion.query(`GRANT ALL PRIVILEGES ON ${base}.* TO ?@'localhost'`, [variables.DB_USER]);
+    for (const host of HOSTS) {
+      // Si la cuenta ya existe, ALTER la deja con la clave actual de .env.
+      await conexion.query(`CREATE USER IF NOT EXISTS ?@? IDENTIFIED BY ?`, [
+        variables.DB_USER,
+        host,
+        variables.DB_PASSWORD
+      ]);
+      await conexion.query(`ALTER USER ?@? IDENTIFIED BY ?`, [
+        variables.DB_USER,
+        host,
+        variables.DB_PASSWORD
+      ]);
+      await conexion.query(`GRANT ALL PRIVILEGES ON ${base}.* TO ?@?`, [variables.DB_USER, host]);
+    }
     await conexion.query('FLUSH PRIVILEGES');
 
-    logger.info(`Usuario "${variables.DB_USER}" listo para la base "${variables.DB_NAME}".`);
+    logger.info(`Usuario "${variables.DB_USER}" (localhost y %) listo para la base "${variables.DB_NAME}".`);
   } finally {
     await conexion.end();
   }

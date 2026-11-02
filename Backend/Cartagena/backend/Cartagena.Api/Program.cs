@@ -51,7 +51,6 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("Comprador", p => p.RequireAssertion(c => c.User.Claims.Any(x => x.Type == "rol" &&
         (x.Value.Equals("CLIENTE", StringComparison.OrdinalIgnoreCase) || x.Value.Equals("ADMIN", StringComparison.OrdinalIgnoreCase)))));
 });
-
 // CORS: usa CORS_ORIGIN (separado por comas) o, si no existe, los orígenes del proyecto.
 var origins = (builder.Configuration["CORS_ORIGIN"] ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 if (origins.Length == 0)
@@ -73,7 +72,7 @@ app.MapOpenApi();
 // Scalar publica documentación; JWT nunca se desactiva en los controladores protegidos.
 app.MapScalarApiReference();
 
-// Rutas de prueba
+// Rutas básicas de salud y portada (las usa el health check de Render).
 app.MapGet("/", () => Results.Redirect("/scalar/v1")).ExcludeFromDescription();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" })).ExcludeFromDescription();
 

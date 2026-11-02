@@ -148,6 +148,62 @@ public sealed class VentasController(DbFactory db, PdfService pdf, MailService m
         return Ok(new { data=rows });
     }
 
+    /// <summary>
+    /// Historial de compras del cliente con envío, guía, estado de entrega y
+    /// garantías/devoluciones asociadas. Usado por "Mis pedidos".
+    /// </summary>
+    [HttpGet("api/mis-compras")]
+    public async Task<IActionResult> MisCompras()
+    {
+        await using var cn=await Db.OpenAsync();
+        var compras=(await cn.QueryAsync("""
+          SELECT v.id_venta, v.fecha, v.total, v.estado, v.estado_pago, v.referencia_pago,
+                 t.nombre AS metodo_pago,
+                 e.id_envio, e.estado AS estado_envio, e.numero_guia, e.fecha_entrega,
+                 e.confirmado_cliente,
+                 d.direccion, d.ciudad, d.estado AS domicilio_estado, d.codigo_postal,
+                 CONCAT_WS(', ', NULLIF(d.calle,''), NULLIF(d.numero,''), NULLIF(d.colonia,''),
+                           NULLIF(d.ciudad,''), NULLIF(d.estado,''), NULLIF(d.codigo_postal,'')) AS direccion_completa
+          FROM venta v
+          JOIN tipo_pago t ON t.id_tipo_pago=v.id_tipo_pago
+          LEFT JOIN envio e ON e.id_venta=v.id_venta
+          LEFT JOIN domicilio d ON d.id_domicilio=e.id_domicilio
+          WHERE v.id_usuario=@uid
+          ORDER BY v.fecha DESC LIMIT 200
+          """,new { uid=UserId })).ToList();
+
+        var ids=compras.Select(c=> (int)c.id_venta).ToArray();
+        var items=ids.Length==0
+          ? Array.Empty<dynamic>()
+          : (await cn.QueryAsync("""
+              SELECT dv.id_venta, dv.id_libro, l.titulo, l.imagen_portada, l.autor,
+                     dv.cantidad, dv.precio_unitario
+              FROM detalle_venta dv JOIN libro l ON l.id_libro=dv.id_libro
+              WHERE dv.id_venta IN @ids ORDER BY l.titulo
+              """,new { ids })).ToArray();
+        var garantias=ids.Length==0
+          ? Array.Empty<dynamic>()
+          : (await cn.QueryAsync("""
+              SELECT g.id_solicitud, g.id_venta, g.id_libro, l.titulo, g.motivo, g.estado, g.fecha
+              FROM solicitud_garantia g JOIN libro l ON l.id_libro=g.id_libro
+              WHERE g.id_usuario=@uid AND g.id_venta IN @ids ORDER BY g.fecha DESC
+              """,new { uid=UserId, ids })).ToArray();
+
+        var data=compras.Select(c=>
+        {
+            var id=(int)c.id_venta;
+            return new
+            {
+                c.id_venta, c.fecha, c.total, c.estado, c.estado_pago, c.referencia_pago, c.metodo_pago,
+                c.id_envio, c.estado_envio, c.numero_guia, c.fecha_entrega, c.confirmado_cliente,
+                c.direccion, c.ciudad, c.domicilio_estado, c.codigo_postal, c.direccion_completa,
+                items=items.Where(i=> (int)i.id_venta==id),
+                garantias=garantias.Where(g=> (int)g.id_venta==id)
+            };
+        });
+        return Ok(new { data });
+    }
+
     [HttpGet("api/ventas/{id:int}")]
     public async Task<IActionResult> Venta(int id)
     {

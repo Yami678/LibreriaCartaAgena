@@ -1,14 +1,15 @@
 import { variables } from '../src/config/entorno.js';
 import { generarHash } from '../src/utils/passwords.js';
 import { crearUsuario, buscarUsuarioPorNombre } from '../src/repositories/usuarios.repository.js';
-import { cerrarPool } from '../src/config/baseDatos.js';
+import { pool, cerrarPool } from '../src/config/baseDatos.js';
 import { logger } from '../src/utils/logger.js';
 
+// Los roles deben existir en la tabla `rol` (los crea el esquema).
 const usuariosDemo = [
-  { nombreUsuario: 'admin', contrasena: variables.USUARIOS_DEMO_PASSWORD, email: 'admin@ventasonline.com', nombreCompleto: 'Administrador General', rol: 'ADMIN' },
-  { nombreUsuario: 'vendedor', contrasena: variables.USUARIOS_DEMO_PASSWORD, email: 'vendedor@ventasonline.com', nombreCompleto: 'Vendedor de Mostrador', rol: 'VENDEDOR' },
-  { nombreUsuario: 'cliente', contrasena: variables.USUARIOS_DEMO_PASSWORD, email: 'cliente@ventasonline.com', nombreCompleto: 'Cliente de Prueba', rol: 'CLIENTE' },
-  { nombreUsuario: 'inactivo', contrasena: variables.USUARIOS_DEMO_PASSWORD, email: 'inactivo@ventasonline.com', nombreCompleto: 'Usuario Deshabilitado', rol: 'CLIENTE' }
+  { nombreUsuario: 'admin', contrasena: variables.USUARIOS_DEMO_PASSWORD, email: 'admin@ventasonline.com', nombreCompleto: 'Administrador General', telefono: null, rol: 'ADMIN' },
+  { nombreUsuario: 'vendedor', contrasena: variables.USUARIOS_DEMO_PASSWORD, email: 'vendedor@ventasonline.com', nombreCompleto: 'Vendedor de Mostrador', telefono: null, rol: 'VENDEDOR' },
+  { nombreUsuario: 'cliente', contrasena: variables.USUARIOS_DEMO_PASSWORD, email: 'cliente@ventasonline.com', nombreCompleto: 'Cliente de Prueba', telefono: null, rol: 'CLIENTE' },
+  { nombreUsuario: 'inactivo', contrasena: variables.USUARIOS_DEMO_PASSWORD, email: 'inactivo@ventasonline.com', nombreCompleto: 'Usuario Deshabilitado', telefono: null, rol: 'CLIENTE', activo: false }
 ];
 
 async function ejecutar() {
@@ -28,20 +29,20 @@ async function ejecutar() {
       passwordHash: contrasenaCifrada,
       email: usuario.email,
       nombreCompleto: usuario.nombreCompleto,
+      telefono: usuario.telefono,
       rol: usuario.rol
     });
 
-    const activo = usuario.nombreUsuario === 'inactivo' ? 0 : 1;
-    if (activo === 0) {
-      const { pool } = await import('../src/config/baseDatos.js');
-      await pool.execute('UPDATE usuarios SET activo = 0 WHERE id = ?', [id]);
+    // La tabla real es `usuario` y la llave es `id_usuario`.
+    if (usuario.activo === false) {
+      await pool.execute('UPDATE usuario SET activo = 0 WHERE id_usuario = ?', [id]);
     }
 
-    logger.info(`Usuario creado -> id ${id} | ${usuario.nombreUsuario} | rol ${usuario.rol}${activo ? '' : ' | inactivo'}`);
+    const estado = usuario.activo === false ? ' | inactivo' : '';
+    logger.info(`Usuario creado -> id ${id} | ${usuario.nombreUsuario} | rol ${usuario.rol}${estado}`);
   }
 
   logger.info('Usuarios de prueba listos. Contrasena compartida: la definida en USUARIOS_DEMO_PASSWORD.');
-  logger.info('Tabla de usuarios resultante:');
   logger.info('  admin     -> ADMIN    (activo)');
   logger.info('  vendedor  -> VENDEDOR (activo)');
   logger.info('  cliente   -> CLIENTE  (activo)');

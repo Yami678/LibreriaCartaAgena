@@ -4,6 +4,7 @@ import {
   estadoServicio,
   iniciarSesion,
   registrarUsuario,
+  consultarDisponibilidadUsuario,
   verificarToken,
   consultarPerfil
 } from '../controllers/autenticacion.controller.js';
@@ -55,6 +56,9 @@ router.get('/salud', controlAsincrono(async (req, res) => {
 router.post('/auth/login', limiteIntentos, controlAsincrono(iniciarSesion));
 
 router.post('/auth/registro', limiteRegistros, controlAsincrono(registrarUsuario));
+
+// Consulta pública (usada por el formulario de registro) para detectar duplicados.
+router.get('/auth/usuario-disponible', limiteRegistros, controlAsincrono(consultarDisponibilidadUsuario));
 
 router.get('/auth/verificar', requiereAutenticacion, verificarToken);
 

@@ -21,7 +21,13 @@ El sistema tiene dos responsabilidades separadas:
 - `POST http://localhost:5000/api/libros` con JWT `ADMIN` emitido por el **Login nuevo** → `201 Created`.
 - `POST /api/libros` sin JWT → `401 Unauthorized`.
 
-**Pendiente antes de compartir una URL con el equipo:** el Gateway anterior (`cartagena-presentacion-gateway-1`) tenía el upstream `login:3000` asociado a la configuración anterior. Es necesario redirigir el tráfico hacia el Login nuevo (`cartagena-csharp-login-1`) y la API C# correcta, revisar redes Docker y habilitar HTTPS. **No asumir que `localhost:8081` genera tokens compatibles con C#.**
+**Estado actual (corregido):** el gateway del compose (`cartagena-csharp-gateway`) publica
+`localhost:8081` y enruta `/api/v1/*` al login Node y `/api/*` a la API C#. La red
+`libreria-network` se crea y el MySQL existente se conecta con alias `mysql` mediante
+`./start-docker.sh`. El login también queda publicado en `localhost:3000` para el proxy de Vite.
+
+**Arranque recomendado:** usa `./start-dev.sh` (nativo) o `./start-docker.sh` (Docker) desde la
+raíz del repositorio. Consulta el `README.md` de la raíz para puertos, credenciales y diagnóstico.
 
 ## 2. URL base por ambiente
 

@@ -50,3 +50,42 @@ public sealed record CompraProveedorDto(int Id_Proveedor, List<ItemCompraProveed
 public sealed record CorreoDto(string Correo);
 public sealed record TokenDto(string Token);
 public sealed record RestablecerDto(string Token, string Nueva_Contrasena);
+
+// ---------------------------------------------------------------------------
+// Usuarios y roles (panel de administración)
+// ---------------------------------------------------------------------------
+public sealed class UsuarioCrearDto
+{
+    [Required, StringLength(150)] public string Nombre { get; set; } = "";
+    [Required, StringLength(60)] public string Nombre_Usuario { get; set; } = "";
+    [Required, StringLength(120)] public string Correo { get; set; } = "";
+    public string Telefono { get; set; } = "";
+    [Required, StringLength(200)] public string Contrasena { get; set; } = "";
+    [Required] public string Rol { get; set; } = "";
+    public bool Activo { get; set; } = true;
+}
+
+public sealed class UsuarioActualizarDto
+{
+    [Required, StringLength(150)] public string Nombre { get; set; } = "";
+    [Required, StringLength(60)] public string Nombre_Usuario { get; set; } = "";
+    [Required, StringLength(120)] public string Correo { get; set; } = "";
+    public string Telefono { get; set; } = "";
+    [Required] public string Rol { get; set; } = "";
+    public bool Activo { get; set; } = true;
+}
+
+public sealed record ContrasenaAdminDto(string Contrasena);
+
+// ---------------------------------------------------------------------------
+// Configuración de la cuenta (cliente)
+// ---------------------------------------------------------------------------
+public sealed class PerfilActualizarDto
+{
+    [Required, StringLength(150)] public string Nombre { get; set; } = "";
+    [Required, StringLength(120)] public string Correo { get; set; } = "";
+    public string Telefono { get; set; } = "";
+}
+
+public sealed record ContrasenaCambioDto(string Actual, string Nueva);
+
