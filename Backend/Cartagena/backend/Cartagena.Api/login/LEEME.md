@@ -5,8 +5,9 @@ necesaria para que el `Dockerfile` de `Cartagena.Api` pueda incluirla en la imag
 
 * Render usa como contexto de build la carpeta `backend/Cartagena.Api/`, así que
   no puede copiar archivos que quedan fuera de ella.
-* En el contenedor, `entrypoint.sh` arranca este servicio Node en el puerto 3000
-  y la API C# hace de front sirviendo `/api/v1/*` mediante un proxy inverso (YARP).
+* En el contenedor, `entrypoint.sh` arranca este servicio Node en el puerto
+  interno 3001 y la API C# hace de front sirviendo `/api/v1/*` mediante un
+  proxy inverso (YARP).
 
 **Si cambias el microservicio original, vuelve a copiarlo aquí:**
 

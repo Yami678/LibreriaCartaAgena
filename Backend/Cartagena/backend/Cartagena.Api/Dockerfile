@@ -26,15 +26,14 @@ COPY login/package.json login/package-lock.json ./
 RUN npm ci --omit=dev
 COPY login/src ./src
 
-# Puerto interno del login (lo consume el proxy /api/v1 de la API C#).
-ENV PORT=3000
-EXPOSE 3000
-
 WORKDIR /app
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-ENV ASPNETCORE_URLS=http://+:8080
+# La API C# escucha en 8080 (el puerto que usa Render) y tambien en 3000 como
+# respaldo. El microservicio de login queda en 3001, interno, y la API C# le
+# hace proxy en /api/v1/*.
+ENV ASPNETCORE_URLS=http://+:8080;http://+:3000
 EXPOSE 8080
 USER $APP_UID
 ENTRYPOINT ["/entrypoint.sh"]

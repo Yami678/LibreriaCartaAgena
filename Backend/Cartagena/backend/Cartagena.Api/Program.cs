@@ -67,7 +67,7 @@ builder.Services.AddCors(o => o.AddPolicy("Configured", p => p.WithOrigins(orige
 // Proxy del microservicio de login (Node), que corre en el mismo contenedor.
 // Así /api/v1/auth/* queda en el mismo origen que la API y el frontend no
 // necesita CORS cruzado para iniciar sesión.
-var destinoLogin = builder.Configuration["LOGIN_PROXY_TARGET"] ?? "http://localhost:3000";
+var destinoLogin = builder.Configuration["LOGIN_PROXY_TARGET"] ?? "http://localhost:3001";
 builder.Services.AddReverseProxy().LoadFromMemory(
     new[]
     {
