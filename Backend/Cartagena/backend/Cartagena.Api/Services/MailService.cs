@@ -29,7 +29,7 @@ public sealed class MailService(IConfiguration settings, ILogger<MailService> lo
         {
             using var client=new SmtpClient(host,int.Parse(settings["SMTP_PORT"]??"587"))
             {
-                EnableSsl=true,Credentials=new NetworkCredential(user,pass),Timeout=12000
+                EnableSsl=true,Credentials=new NetworkCredential(user,pass),Timeout=30000
             };
             using var mail=new MailMessage(from,destination,subject,message);
             if (receipt is not null)
