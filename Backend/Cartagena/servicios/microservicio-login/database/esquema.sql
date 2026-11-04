@@ -77,3 +77,17 @@ CREATE TABLE IF NOT EXISTS token_cuenta (
 
 -- Nota: el resto del esquema (libro, venta, carrito, etc.) vive en la misma
 -- base `tienda_online` y se restaura desde backups/tienda_online.sql.
+
+-- ---------------------------------------------------------------------
+-- Tabla: config_sistema
+-- Ajustes que se pueden cambiar sin redeploy. MailService lee de aquí las
+-- claves SMTP_* y, si faltan, usa las variables del entorno (.env en local,
+-- Environment en Render). Se deja vacía en local: manda el .env.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS config_sistema (
+  clave VARCHAR(64) NOT NULL,
+  valor TEXT NOT NULL,
+  actualizado_en TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (clave)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
